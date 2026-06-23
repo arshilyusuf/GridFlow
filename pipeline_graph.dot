@@ -1,0 +1,5 @@
+digraph GridFlow_DAG {
+    node [shape=box, style=filled, color=lightblue];
+    T0 [label="Task 0\nPriority: 1"];
+
+}
