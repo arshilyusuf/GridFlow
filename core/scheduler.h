@@ -12,6 +12,9 @@ class Scheduler {
 private:
     std::vector<WorkStealingDeque*> deques;
     std::atomic<bool> is_running{true};
+    std::atomic<int> active_workers{0};
+    std::atomic<int> tasks_completed{0};
+    std::atomic<int> expected_tasks{0};
 
 public:
     Scheduler(int num_threads) {
@@ -32,6 +35,25 @@ public:
 
     void stop() {
         is_running.store(false, std::memory_order_relaxed);
+    }
+
+    void reset_for_run(int total_tasks) {
+        is_running.store(true, std::memory_order_relaxed);
+        tasks_completed.store(0, std::memory_order_relaxed);
+        active_workers.store(0, std::memory_order_relaxed);
+        expected_tasks.store(total_tasks, std::memory_order_relaxed);
+    }
+
+    bool is_idle() const {
+        if (active_workers.load(std::memory_order_acquire) > 0) {
+            return false;
+        }
+        for (auto d : deques) {
+            if (!d->empty()) {
+                return false;
+            }
+        }
+        return true;
     }
     // 1. Get number of active threads (total deques)
 int get_active_threads() const {
@@ -54,22 +76,19 @@ size_t get_total_tasks_queued() {
 }
 
 // Simple approximation of active thread load
-int get_active_worker_count() {
-    int active = 0;
-    for (auto d : deques) {
-        if (d->size() > 0) active++;
-    }
-    return active;
+int get_active_worker_count() const {
+    return active_workers.load(std::memory_order_relaxed);
 }
-// 3. Simple CPU Load Simulation (Approximate)
-// In a real HFT engine, you'd hook into system counters, 
-// but here we track active work cycles.
-double get_cpu_utilization() {
-    int active = 0;
-    for (auto d : deques) {
-        if (!d->empty()) active++;
-    }
-    return (double)active / deques.size() * 100.0;
+
+int get_tasks_completed() const {
+    return tasks_completed.load(std::memory_order_relaxed);
+}
+
+// 3. Engine utilization based on workers actively executing tasks
+double get_cpu_utilization() const {
+    if (deques.empty()) return 0.0;
+    return static_cast<double>(active_workers.load(std::memory_order_relaxed))
+         / static_cast<double>(deques.size()) * 100.0;
 }
     void worker_loop(int my_thread_id, int total_threads) {
         thread_local std::mt19937 rng(my_thread_id);
@@ -90,7 +109,10 @@ double get_cpu_utilization() {
 
             if (task != nullptr) {
                 spin_count = 0; // Reset spin counter on successful work
+                active_workers.fetch_add(1, std::memory_order_relaxed);
                 task->work_payload();
+                active_workers.fetch_sub(1, std::memory_order_relaxed);
+                tasks_completed.fetch_add(1, std::memory_order_relaxed);
 
                 for (Task* dependent : task->dependents) {
                     int remaining = dependent->pending_dependencies.fetch_sub(1, std::memory_order_acq_rel) - 1;

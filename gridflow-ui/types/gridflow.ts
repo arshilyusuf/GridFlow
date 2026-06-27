@@ -32,7 +32,17 @@ export interface SystemLog {
 export interface EngineMetrics {
   cpu: number;
   memory: string;
+  processMemory: string;
   activeThreads: number;
+  queuedTasks: number;
+  tasksCompleted: number;
+  totalTasks: number;
+  engineUtilization: number;
+  throughput: number;
+  elapsedSeconds: number;
+  stage: string;
+  progress: number;
+  matrixSize: number;
 }
 
 export const SCENARIOS = {

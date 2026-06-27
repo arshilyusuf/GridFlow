@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Play, Square, Activity, Cpu, Network, Settings2, Wifi, WifiOff } from 'lucide-react';
+import { Play, Square, Activity, Cpu, Network, Settings2, Wifi, WifiOff, Gauge, Timer, Layers } from 'lucide-react';
 import { Card, Button, Badge } from '../components/ui/core';
 import { DagVisualizer } from '@/components/dashbaord/dag-visualizer';
 import { TerminalLogs } from '@/components/dashbaord/terminal';
@@ -91,7 +91,7 @@ export default function GridFlowDashboard() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-zinc-400 mb-1.5">Payload Size (Tasks)</label>
+                <label className="block text-xs font-medium text-zinc-400 mb-1.5">Matrix Scale (payload)</label>
                 <input 
                   type="number" 
                   value={payloadSize}
@@ -118,23 +118,69 @@ export default function GridFlowDashboard() {
             <Card className="p-4 flex flex-col justify-between">
               <div className="flex items-center text-zinc-500 mb-2">
                 <Cpu className="w-4 h-4 mr-1.5" />
-                <span className="text-xs font-medium">CPU Usage</span>
+                <span className="text-xs font-medium">System CPU</span>
               </div>
               <span className="text-2xl font-semibold text-zinc-100">{metrics.cpu}%</span>
             </Card>
             <Card className="p-4 flex flex-col justify-between">
               <div className="flex items-center text-zinc-500 mb-2">
                 <Activity className="w-4 h-4 mr-1.5" />
-                <span className="text-xs font-medium">Memory Load</span>
+                <span className="text-xs font-medium">System Memory</span>
               </div>
               <span className="text-2xl font-semibold text-zinc-100">{metrics.memory}</span>
             </Card>
-            <Card className="col-span-2 p-4 flex flex-col justify-between">
+            <Card className="p-4 flex flex-col justify-between">
+              <div className="flex items-center text-zinc-500 mb-2">
+                <Gauge className="w-4 h-4 mr-1.5" />
+                <span className="text-xs font-medium">Engine Utilization</span>
+              </div>
+              <span className="text-2xl font-semibold text-zinc-100">{metrics.engineUtilization}%</span>
+            </Card>
+            <Card className="p-4 flex flex-col justify-between">
               <div className="flex items-center text-zinc-500 mb-2">
                 <Network className="w-4 h-4 mr-1.5" />
-                <span className="text-xs font-medium">Active Thread Pool</span>
+                <span className="text-xs font-medium">Active Workers</span>
               </div>
               <span className="text-2xl font-semibold text-zinc-100">{metrics.activeThreads} / {targetCores}</span>
+            </Card>
+            <Card className="col-span-2 p-4">
+              <div className="flex items-center justify-between text-zinc-500 mb-2">
+                <div className="flex items-center">
+                  <Layers className="w-4 h-4 mr-1.5" />
+                  <span className="text-xs font-medium">Pipeline Progress</span>
+                </div>
+                <span className="text-xs text-zinc-400">{metrics.tasksCompleted}/{metrics.totalTasks} tasks</span>
+              </div>
+              <div className="w-full h-2 bg-zinc-800 rounded-full overflow-hidden mb-2">
+                <div
+                  className="h-full bg-emerald-500 transition-all duration-300"
+                  style={{ width: `${metrics.progress}%` }}
+                />
+              </div>
+              <p className="text-xs text-zinc-400 truncate">{metrics.stage || 'Idle'}</p>
+            </Card>
+            <Card className="p-4 flex flex-col justify-between">
+              <div className="flex items-center text-zinc-500 mb-2">
+                <Timer className="w-4 h-4 mr-1.5" />
+                <span className="text-xs font-medium">Elapsed</span>
+              </div>
+              <span className="text-2xl font-semibold text-zinc-100">{metrics.elapsedSeconds}s</span>
+            </Card>
+            <Card className="p-4 flex flex-col justify-between">
+              <div className="flex items-center text-zinc-500 mb-2">
+                <Activity className="w-4 h-4 mr-1.5" />
+                <span className="text-xs font-medium">Throughput</span>
+              </div>
+              <span className="text-2xl font-semibold text-zinc-100">{metrics.throughput} t/s</span>
+            </Card>
+            <Card className="col-span-2 p-4 flex flex-col justify-between">
+              <div className="flex items-center text-zinc-500 mb-2">
+                <Cpu className="w-4 h-4 mr-1.5" />
+                <span className="text-xs font-medium">Process Memory · Matrix · Queue</span>
+              </div>
+              <span className="text-sm font-semibold text-zinc-100">
+                {metrics.processMemory} · {metrics.matrixSize > 0 ? `${metrics.matrixSize}×${metrics.matrixSize}` : '—'} · {metrics.queuedTasks} queued
+              </span>
             </Card>
           </div>
         </div>

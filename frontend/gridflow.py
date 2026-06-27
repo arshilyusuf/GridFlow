@@ -7,6 +7,10 @@ class GridFlowPipeline:
         self.tasks = {}
         self.task_counter = 0
         self.root_tasks = [] # NEW: Track the entry points of the graph
+        self.scheduler = gridflow_cpp.Scheduler(num_threads)
+
+    def get_scheduler(self):
+        return self.scheduler
 
     def task(self, depends_on=None):
         if depends_on is None:
@@ -38,13 +42,11 @@ class GridFlowPipeline:
         execution_order = gridflow_cpp.DAGCompiler.compile(raw_tasks)
         print(f"=> C++ Compilation successful. Firing up {self.num_threads} cores.")
 
-        engine = gridflow_cpp.Scheduler(self.num_threads)
-        
         # THE FIX: Only push the Root Nodes into the starting queue!
         # The C++ worker loop will automatically queue up dependents as it works.
         for t in self.root_tasks:
-            engine.push_task(t, 0)
+            self.scheduler.push_task(t, 0)
 
         # Unleash the threads 
-        engine.run_workers(self.num_threads)
+        self.scheduler.run_workers(self.num_threads, len(raw_tasks))
         print("=> C++ Engine execution complete.")

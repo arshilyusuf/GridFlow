@@ -39,13 +39,12 @@ public:
             }
         }
 
-        // Clean up the task list by removing fused nodes
+        // Clean up the task list by removing fused nodes.
+        // Never `delete` tasks here: PythonTask lifetimes are owned by Python/pybind.
         std::vector<Task*> optimized_tasks;
         for (Task* t : tasks) {
             if (fused_and_removed.find(t) == fused_and_removed.end()) {
                 optimized_tasks.push_back(t);
-            } else {
-                delete t; // Free the orphaned memory
             }
         }
         
